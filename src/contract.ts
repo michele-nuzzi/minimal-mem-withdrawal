@@ -1,5 +1,18 @@
 import { Application, Builtin, Delay, ErrorUPLC, Force, Lambda, UPLCConst, UPLCTerm, UPLCVar } from "@harmoniclabs/plu-ts";
 
+function drop( n : number, term: UPLCTerm ): UPLCTerm
+{
+    for( let i = 0; i < n; i++ )
+    {
+        term = new Application(
+            Builtin.tailList,
+            term
+        );
+    }
+    
+    return term;
+}
+
 function elemAt( n : number, term: UPLCTerm ): UPLCTerm
 {
     for( let i = 0; i < n; i++ )
@@ -128,13 +141,13 @@ const check_recursive = new Application(
 
 function getManyIfThenElses(): UPLCTerm
 {
-    const n_inlined = 10;
+    const n_inlined = 9;
     let term: UPLCTerm = apply(
         check_recursive,
-        new UPLCVar( 2 ) // ctx.tx.withdrawals
+        drop( n_inlined, new UPLCVar( 2 ) ) // ctx.tx.withdrawals.slice( n_inlined - 1 )
     );
     
-    for( let i = n_inlined - 1; i >= 0; i-- )
+    for( let i = n_inlined; i >= 0; i-- )
     {
         term = ifThenElse(
             apply(
