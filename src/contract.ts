@@ -69,16 +69,77 @@ function ifThenElse(
     );
 }
 
+const innerZ = new Lambda(
+    new Application(
+        new UPLCVar( 1 ), // Z
+        new Lambda(
+            new Application(
+                new Application(
+                    new UPLCVar( 1 ), // toMakeRecursive
+                    new UPLCVar( 1 )  // toMakeRecursive ( self )
+                ),
+                new UPLCVar( 0 ) // first argument (other than self)
+            )
+        )
+    )
+);
+
+const z_comb = new Lambda(
+    new Application(
+        innerZ.clone(),
+        innerZ.clone()
+    )
+);
+
+const check_recursive = new Application(
+    z_comb,
+    new Lambda( // self
+        new Lambda( // list
+            ifThenElse(
+                apply(
+                    Builtin.nullList,
+                    new UPLCVar( 0 ) // list
+                ),
+                new ErrorUPLC(),
+                ifThenElse(
+                    apply(
+                        new UPLCVar( 2 ), // is_withdrawal_cred
+                        getFstPair(
+                            apply(
+                                Builtin.headList,
+                                new UPLCVar( 0 ) // list
+                            )
+                        )                        
+                    ),
+                    UPLCConst.unit,
+                    apply(
+                        new UPLCVar( 1 ), // self
+                        apply(
+                            Builtin.tailList,
+                            new UPLCVar( 0 )
+                        )
+                    )
+
+                )
+            )
+        )
+    )
+);
+
 function getManyIfThenElses(): UPLCTerm
 {
-    let term: UPLCTerm = new ErrorUPLC();
+    const n_inlined = 10;
+    let term: UPLCTerm = apply(
+        check_recursive,
+        new UPLCVar( 2 ) // ctx.tx.withdrawals
+    );
     
-    for( let i = 49; i >= 0; i-- )
+    for( let i = n_inlined - 1; i >= 0; i-- )
     {
         term = ifThenElse(
             apply(
                 new UPLCVar( 0 ), // is_withdrawal_cred
-                getFstPair( elemAt( i, new UPLCVar( 1 ) ) ) // ctx.tx.withdrawals[0].fst
+                getFstPair( elemAt( i, new UPLCVar( 1 ) ) ) // ctx.tx.withdrawals[i].fst
             ),
             UPLCConst.unit, // then ok
             // else continue till error
